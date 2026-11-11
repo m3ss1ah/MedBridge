@@ -15,6 +15,7 @@ import uuid
 from typing import Any
 
 from pydantic import BaseModel, Field, ValidationError, field_validator
+from starlette.concurrency import run_in_threadpool
 
 from app.errors import AppError
 from app.prompts.explanation import build_explanation_system, build_explanation_user
@@ -32,6 +33,7 @@ from app.schemas import (
 )
 from app.services import llm_client
 from app.services.pdf_extractor import ExtractedPDF
+from app.services.rag.related import attach_related_knowledge
 from app.services.range_parser import compute_status, parse_number, parse_range
 
 logger = logging.getLogger("medbridge.analyzer")
@@ -108,7 +110,11 @@ MIN_DOCTOR_QUESTIONS = 4
 
 
 async def analyze_report(
-    extracted: ExtractedPDF, reading_level: str, *, started: float | None = None
+    extracted: ExtractedPDF,
+    reading_level: str,
+    *,
+    language: str = "en",
+    started: float | None = None,
 ) -> AnalyzeReportResponse:
     started = started if started is not None else time.perf_counter()
     llm = llm_client.get_llm_client()
@@ -135,7 +141,10 @@ async def analyze_report(
     patient_context = _parse_patient_context(raw.get("patient_context"))
 
     # ---- 3) Explanation (LLM call #2) — only validated data goes in ---------
-    expl = await _explain(tests, report_type, patient_context, reading_level, llm)
+    expl = await _explain(tests, report_type, patient_context, reading_level, language, llm)
+
+    # ---- 3b) Related knowledge for the detail drawer (retrieval only, no LLM) --
+    await run_in_threadpool(attach_related_knowledge, tests)
 
     # ---- 4) Merge ----------------------------------------------------------
     attach_explanations(tests, expl.explanations)
@@ -154,6 +163,7 @@ async def analyze_report(
         red_flags=guardrails.detect_red_flags(tests, extracted.text),
         unparsed_lines=unparsed[:MAX_UNPARSED_LINES],
         disclaimer=DISCLAIMER,
+        language="hi" if language == "hi" else "en",
         meta=AnalyzeMeta(
             pages=extracted.pages,
             extraction_method=extracted.method,
@@ -256,6 +266,7 @@ async def _explain(
     report_type: str,
     patient_context: PatientContext,
     reading_level: str,
+    language: str,
     llm: "llm_client.LLMClient",
 ) -> RawExplanationResponse:
     tests_for_prompt = [
@@ -280,10 +291,12 @@ async def _explain(
         tests_json=json.dumps(tests_for_prompt, ensure_ascii=False, indent=1),
         num_tests=len(tests),
     )
-    # Big panels need more room for the JSON reply.
+    # Big panels need more room for the JSON reply; Hindi text uses more tokens.
     max_tokens = 4096 if len(tests) > 10 else None
+    if language == "hi":
+        max_tokens = 8192
     raw = await llm.chat_json(
-        build_explanation_system(reading_level),
+        build_explanation_system(reading_level, language),
         user,
         max_tokens=max_tokens,
         json_schema=RawExplanationResponse.model_json_schema(),

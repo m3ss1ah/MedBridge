@@ -60,11 +60,23 @@ LARGE_PANEL_INSTRUCTION = (
 LARGE_PANEL_THRESHOLD = 25
 
 
-def build_explanation_system(reading_level: str) -> str:
+# [Extension] Extra rule appended ONLY for non-English output. The spec prompt above is
+# unchanged; English requests send it exactly as written.
+LANGUAGE_INSTRUCTIONS = {
+    "hi": (
+        "\n\nLanguage: write every text value in the JSON in simple, everyday Hindi "
+        "(Devanagari script). Keep test names, numbers, units and the JSON keys exactly "
+        "as given, in English. Keep the same safety rules."
+    ),
+}
+
+
+def build_explanation_system(reading_level: str, language: str = "en") -> str:
     instruction = READING_LEVEL_INSTRUCTIONS.get(
         reading_level, READING_LEVEL_INSTRUCTIONS["simple"]
     )
-    return EXPLANATION_SYSTEM_TEMPLATE.format(reading_level_instruction=instruction)
+    system = EXPLANATION_SYSTEM_TEMPLATE.format(reading_level_instruction=instruction)
+    return system + LANGUAGE_INSTRUCTIONS.get(language, "")
 
 
 def build_explanation_user(

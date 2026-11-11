@@ -6,8 +6,12 @@ import '@fontsource-variable/bricolage-grotesque/opsz.css'
 import '@fontsource/atkinson-hyperlegible/400.css'
 import '@fontsource/atkinson-hyperlegible/700.css'
 import '@fontsource/atkinson-hyperlegible/400-italic.css'
+// Devanagari glyphs for the Hindi explanation (Atkinson has Latin only).
+import '@fontsource/noto-sans-devanagari/400.css'
+import '@fontsource/noto-sans-devanagari/700.css'
 import './index.css'
 import './landing.css'
+import './features.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

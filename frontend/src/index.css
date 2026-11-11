@@ -45,8 +45,11 @@
   --bg-card: var(--paper);
 
   /* Type */
-  --font-display: 'Bricolage Grotesque Variable', 'Segoe UI', system-ui, sans-serif;
-  --font-body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display:
+    'Bricolage Grotesque Variable', 'Noto Sans Devanagari', 'Segoe UI', system-ui, sans-serif;
+  --font-body:
+    'Atkinson Hyperlegible', 'Noto Sans Devanagari', system-ui, -apple-system, 'Segoe UI',
+    sans-serif;
 
   /* Shape: radius follows hierarchy (page panels > rows > chips) */
   --r-panel: 22px;

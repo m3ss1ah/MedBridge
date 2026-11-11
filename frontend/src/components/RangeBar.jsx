@@ -1,3 +1,4 @@
+import { ChevronRight } from 'lucide-react'
 import StatusChip from './StatusChip.jsx'
 import RangeGauge from './RangeGauge.jsx'
 import { STATUS_PHRASES, formatNumber, formatValue } from '../utils/format.js'
@@ -15,20 +16,38 @@ function rangeText(test) {
 
 /**
  * One dashboard row: test name, value, status chip and the range gauge.
- * @param {{ test: object }} props
+ * Clicking the row (or its Details button) opens the detail drawer when `onOpen` is given.
+ * @param {{ test: object, onOpen?: (test: object) => void }} props
  */
-export default function RangeBar({ test }) {
+export default function RangeBar({ test, onOpen }) {
   const drawable = computeBarGeometry(test.value, test.ref_low, test.ref_high) !== null
   const label = `${test.name} ${formatValue(test)}, ${STATUS_PHRASES[test.status]}${
     drawable ? ` ${rangeText(test).replace('–', 'to')}` : ''
   }`
 
   return (
-    <div className={`range-row range-row--${test.status}`}>
+    <div
+      className={`range-row range-row--${test.status} ${onOpen ? 'range-row--clickable' : ''}`}
+      onClick={onOpen ? () => onOpen(test) : undefined}
+    >
       <div className="range-row__top">
         <span className="range-row__name">{test.name}</span>
         <span className="range-row__value">{formatValue(test)}</span>
         <StatusChip status={test.status} />
+        {onOpen && (
+          <button
+            type="button"
+            className="icon-button range-row__open"
+            aria-haspopup="dialog"
+            aria-label={`Details for ${test.name}`}
+            onClick={(e) => {
+              e.stopPropagation()
+              onOpen(test)
+            }}
+          >
+            <ChevronRight size={18} aria-hidden="true" />
+          </button>
+        )}
       </div>
 
       {drawable ? (

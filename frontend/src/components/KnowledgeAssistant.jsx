@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Send, MessageCircleQuestion } from 'lucide-react'
+import { Send, MessageCircleQuestion, FileText } from 'lucide-react'
 import ChatMessage from './ChatMessage.jsx'
 import LoadingState from './LoadingState.jsx'
 import { askQuestion } from '../api/client.js'
 import { MAX_HISTORY_TURNS, MAX_QUESTION_CHARS, SUGGESTED_QUESTIONS } from '../utils/constants.js'
 import { isAbnormal } from '../utils/format.js'
-import { buildReportContext } from '../utils/chat.js'
+import { askQuestionFor, buildReportContext } from '../utils/chat.js'
 
 // Show similarity scores on source cards when the page URL contains ?debug
 const DEBUG =
@@ -27,9 +27,19 @@ function buildHistory(messages) {
  * and source cards. If a report has been analysed, the user can let the assistant
  * use it ("Use my report for context").
  *
- * @param {{ report: object|null, messages: object[], setMessages: Function }} props
+ * Questions can also arrive from elsewhere (a result's detail drawer or the glossary)
+ * through `pendingQuestion`; they are sent once and then cleared.
+ *
+ * @param {{ report: object|null, messages: object[], setMessages: Function,
+ *           pendingQuestion?: string|null, onPendingHandled?: () => void }} props
  */
-export default function KnowledgeAssistant({ report, messages, setMessages }) {
+export default function KnowledgeAssistant({
+  report,
+  messages,
+  setMessages,
+  pendingQuestion,
+  onPendingHandled,
+}) {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [useReport, setUseReport] = useState(true)
@@ -39,9 +49,10 @@ export default function KnowledgeAssistant({ report, messages, setMessages }) {
     listEndRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'end' })
   }, [messages, loading])
 
-  // Static suggestions, plus "What is X?" for each out-of-range test in the report.
+  // Static suggestions, plus questions about the person's own out-of-range results,
+  // phrased by status ("What does low Haemoglobin mean?").
   const suggestions = useMemo(() => {
-    const dynamic = report ? report.tests.filter(isAbnormal).map((t) => `What is ${t.name}?`) : []
+    const dynamic = report ? report.tests.filter(isAbnormal).map(askQuestionFor) : []
     return [...dynamic.slice(0, 4), ...SUGGESTED_QUESTIONS]
   }, [report])
 
@@ -68,6 +79,15 @@ export default function KnowledgeAssistant({ report, messages, setMessages }) {
       setLoading(false)
     }
   }
+
+  // Send a question handed over from the drawer or glossary, exactly once.
+  useEffect(() => {
+    if (pendingQuestion && !loading) {
+      send(pendingQuestion)
+      onPendingHandled?.()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingQuestion])
 
   function retry(message) {
     // Remove the failed answer and its question, then ask again.
@@ -101,6 +121,14 @@ export default function KnowledgeAssistant({ report, messages, setMessages }) {
         Answers come only from MedBridge&apos;s curated knowledge base, with sources. MedBridge does
         not diagnose or give treatment advice.
       </p>
+      {report && (
+        <p className={`context-pill ${useReport ? '' : 'context-pill--off'}`}>
+          <FileText size={15} aria-hidden="true" />
+          {useReport
+            ? `Answers can refer to your ${report.report_type}.`
+            : 'Your report is not being used for these answers.'}
+        </p>
+      )}
 
       <div className="chat-log" aria-live="polite">
         {messages.length === 0 && (

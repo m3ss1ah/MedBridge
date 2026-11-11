@@ -27,6 +27,27 @@ class TestExplanation(BaseModel):
     range_note: Optional[str] = None
 
 
+class Source(BaseModel):
+    id: int
+    title: str
+    section: Optional[str] = None
+    source_name: str
+    source_url: Optional[str] = None
+    snippet: str
+    score: float
+
+
+class RelatedKnowledge(BaseModel):
+    """[Extension] Knowledge-base passages and doctor questions for one test.
+
+    Filled by retrieval only (no LLM call) when the index is loaded; otherwise None.
+    Powers the click-through detail drawer in the frontend.
+    """
+
+    passages: list[Source] = Field(default_factory=list)
+    doctor_questions: list[str] = Field(default_factory=list)
+
+
 class LabTest(BaseModel):
     id: str
     name: str
@@ -41,6 +62,7 @@ class LabTest(BaseModel):
     status: Status = "unknown"
     status_source: Literal["computed", "lab_flag", "none"] = "none"
     explanation: Optional[TestExplanation] = None
+    related: Optional[RelatedKnowledge] = None  # [Extension] see RelatedKnowledge
 
 
 class StatusCounts(BaseModel):
@@ -81,6 +103,7 @@ class AnalyzeReportResponse(BaseModel):
     unparsed_lines: list[str] = Field(default_factory=list)
     disclaimer: str
     meta: AnalyzeMeta
+    language: Literal["en", "hi"] = "en"  # [Extension] language of the AI-written text
 
 
 class SlimTest(BaseModel):
@@ -106,16 +129,6 @@ class AskRequest(BaseModel):
     question: str = Field(min_length=3, max_length=500)
     report_context: Optional[ReportContext] = None
     history: list[ChatTurn] = Field(default_factory=list, max_length=6)
-
-
-class Source(BaseModel):
-    id: int
-    title: str
-    section: Optional[str] = None
-    source_name: str
-    source_url: Optional[str] = None
-    snippet: str
-    score: float
 
 
 class AskMeta(BaseModel):

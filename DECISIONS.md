@@ -58,3 +58,26 @@ On 2026-11-12, Groq returned `404 model_not_found` for `llama-3.3-70b-versatile`
 
 ## D19. Full-width citation brackets are normalised
 gpt-oss sometimes writes markers as `【1】` / `【Report】`. `answerer.normalize_markers` converts them to `[1]` / `[Report]` before citations are mapped, so source mapping, the "your report" badge and `used_report_context` work for any model.
+
+## D20. New features added without new endpoints
+Requested features: sample picker, donut summary, detail drawer, glossary tooltips, Hindi. Each one fits inside the two existing endpoints or runs entirely in the browser:
+- **Detail drawer ("related knowledge")**: `/api/analyze-report` now attaches, to each test, the matching knowledge-base passages ("What it measures" plus the section for its direction, e.g. "What low values can be associated with") and the doc's "Questions you might ask your doctor" bullets. This is **retrieval only, no LLM call** (`services/rag/related.py`). With no index loaded it is skipped and analysis still works (§8.1).
+- **Hindi**: `/api/analyze-report` accepts an optional `language` form field (`en` default, `hi`). For Hindi, one extra rule is appended to the explanation system prompt. The §9 prompt text is unchanged and is sent exactly as written for English. Extraction, status computation and test names stay in English.
+- **Caching**: each language's result is cached **in the browser's memory only** (React state), so switching back and forth calls the AI once per language. A server-side cache would mean keeping report data on the server, which breaks the no-persistence rule (§0.3).
+- **Glossary, donut, sample picker, read-aloud, visit-summary download, dashboard ordering**: frontend only.
+
+## D21. Additive schema extensions
+§7.3 says to implement the models exactly. All original fields are unchanged. Two optional, backward-compatible fields were added and are marked `[Extension]` in `schemas.py`:
+- `LabTest.related` (`RelatedKnowledge`: `passages: list[Source]`, `doctor_questions: list[str]`)
+- `AnalyzeReportResponse.language` (`"en" | "hi"`)
+
+`Source` was moved above `LabTest` so it can be reused; its fields are unchanged.
+
+## D22. Glossary written in-house
+The 61 glossary definitions (`frontend/src/utils/glossary.js`) are short, plain-language explanations written for the project and consistent with the knowledge base. Tooltips highlight only the first mention of each term in a block, so text stays readable. Single letters and everyday words are excluded.
+
+## D23. Extra features chosen by the build agent
+- **Listen** (Web Speech API) reads the summary aloud in English or Hindi. This helps persona P3 (a caregiver for an elderly relative). The button is hidden in browsers without speech support.
+- **Download summary**: a plain-text doctor-visit note (summary, results out of range first, questions, disclaimer). It is generated in the browser and nothing is sent anywhere. This is the lightweight version of the "printable doctor visit summary" listed in §19.
+- **Add questions from the drawer** to the report's doctor-question list.
+- **"Only terms in my report"** filter in the glossary.

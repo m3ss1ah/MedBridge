@@ -12,6 +12,26 @@ MedBridge helps people understand their **lab reports** in plain language. Uploa
 
 ---
 
+## What you can do in the app
+
+| Feature | Where | How it works |
+|---|---|---|
+| **One-click sample reports** | Report tab | Three synthetic reports (CBC, lipid, thyroid/metabolic), each tied to a persona. No file hunting during a demo. |
+| **Plain-language report explanation** | Report tab | Overview, key findings and one row per result, out-of-range first. *Simple* or *Detailed* wording. |
+| **Donut summary** | Report tab | "7 of 9 in range" at a glance, with a count legend. Plain SVG. |
+| **Detail drawer** | Click any result (Report or Dashboard) | The gauge, the full explanation, **related passages from the knowledge base with source links**, and doctor questions you can add to your list. Retrieval only, no extra AI call. |
+| **Range-bar dashboard** | Dashboard tab | Every value on a gauge against the lab's range. Filter by status; order by *out of range first* or *by section*. Status is shown by colour, shape and word. |
+| **Knowledge assistant** | Ask tab | Cited answers from 30 curated articles. Chips are phrased from your own results ("What does low Haemoglobin mean?"), and the chat knows which report is loaded. |
+| **Glossary + tooltips** | Glossary tab, and underlined words | 61 plain-language definitions. Hover over or Tab to an underlined term for its meaning. The searchable glossary can show only terms in your report, and any term can go to the assistant in one click. |
+| **Hindi** | Language switch on the report | The AI rewrites the explanation in Hindi. The result is cached in the browser, so switching back is instant. Test names, numbers and statuses never change. |
+| **Listen** | Report summary | Reads the summary aloud in English or Hindi, using the browser's built-in speech. |
+| **Doctor visit summary** | Questions card | Copy all, print, or download a plain-text visit note. Generated in the browser. |
+| **Critical-value banner** | Report tab | Appears only when the lab itself marks a value as critical. |
+
+Everything above uses the same **two endpoints**. See `DECISIONS.md` (D20–D23) for how each feature fits.
+
+---
+
 ## Architecture
 
 ```mermaid
@@ -154,6 +174,8 @@ Open <http://localhost:5173>. The landing page appears first; click **Try a samp
 | `LOG_LEVEL` | `INFO` | Logging level (logs never contain report content) |
 | `RATE_LIMIT_PER_MINUTE` | `20` | Simple per-IP limit on API calls; `0` turns it off |
 
+`POST /api/analyze-report` also accepts an optional `language` form field (`en`, the default, or `hi`).
+
 ### `frontend/.env` (copy from `frontend/.env.example`)
 
 | Variable | Purpose |
@@ -217,6 +239,11 @@ All screens below show live output from the app on the synthetic sample reports.
 | ![Upload page with the hero range gauge](docs/screenshots/upload.png) | ![Thyroid and metabolic report summary](docs/screenshots/report.png) |
 | **Dashboard** | **Knowledge assistant** |
 | ![Health dashboard range gauges](docs/screenshots/dashboard.png) | ![Cited answer using the report](docs/screenshots/ask.png) |
+
+| **Summary with donut and tooltips** | **Detail drawer** |
+| ![Report summary with donut chart](docs/screenshots/report-summary.png) | ![Detail drawer with library passages](docs/screenshots/drawer.png) |
+| **Hindi explanation** | **Glossary** |
+| ![Hindi explanation](docs/screenshots/hindi.png) | ![Searchable glossary](docs/screenshots/glossary.png) |
 
 Mobile (375 px): ![Mobile views](docs/screenshots/mobile.png)
 

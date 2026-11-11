@@ -26,3 +26,11 @@ export function buildReportContext(report) {
     })),
   }
 }
+
+/** The question the "Ask about this" button sends, phrased by status. */
+export function askQuestionFor(test) {
+  if (test.status === 'low' || test.status === 'high') {
+    return `What does ${test.status} ${test.name} mean?`
+  }
+  return `What is ${test.name}?`
+}

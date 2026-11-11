@@ -222,3 +222,14 @@ def test_post_check_answer(answer: str, flagged: bool) -> None:
 def test_canned_fixture_is_json_serialisable() -> None:
     # Guards against typos in the canned data used across the test suite.
     json.dumps([CBC_EXTRACTION, CBC_EXPLANATION])
+
+
+async def test_hindi_adds_language_rule_only_for_hindi(fake_llm) -> None:
+    fake_llm.json_responses = [CBC_EXTRACTION, CBC_EXPLANATION, CBC_EXTRACTION, CBC_EXPLANATION]
+    en = await analyze_report(_extracted("sample_cbc_low_hb.pdf"), "simple")
+    hi = await analyze_report(_extracted("sample_cbc_low_hb.pdf"), "simple", language="hi")
+    assert "Hindi" not in fake_llm.calls[1]["system"]
+    assert "Hindi" in fake_llm.calls[3]["system"]
+    assert (en.language, hi.language) == ("en", "hi")
+    # Extraction is identical in both languages; only the explanation changes.
+    assert fake_llm.calls[0]["system"] == fake_llm.calls[2]["system"]

@@ -6,7 +6,7 @@ import RangeGauge from './RangeGauge.jsx'
 
 /**
  * Drag-and-drop PDF upload with client-side checks, reading level toggle,
- * a required consent checkbox, and "Try a sample report" buttons.
+ * a required consent checkbox, and a one-click sample report picker.
  *
  * @param {{ onAnalyze: (file: File, readingLevel: string) => void, disabled?: boolean }} props
  */
@@ -92,7 +92,68 @@ export default function UploadPanel({ onAnalyze, disabled = false }) {
         </figure>
       </section>
 
-      <section className="card upload" aria-label="Upload your report">
+      <section className="card upload" aria-label="Analyse a report">
+        <div className="upload__prefs">
+          <fieldset className="reading-level">
+            <legend>Explanation style</legend>
+            <label>
+              <input
+                type="radio"
+                name="reading-level"
+                value="simple"
+                checked={readingLevel === 'simple'}
+                onChange={() => setReadingLevel('simple')}
+              />
+              Simple
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="reading-level"
+                value="detailed"
+                checked={readingLevel === 'detailed'}
+                onChange={() => setReadingLevel('detailed')}
+              />
+              Detailed
+            </label>
+          </fieldset>
+
+          <label className="consent">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+            />
+            <span>I understand MedBridge is for education and does not replace my doctor.</span>
+          </label>
+        </div>
+
+        <div className="samples">
+          <h2 className="samples__title">Start with a sample report</h2>
+          <p className="small muted">
+            Synthetic reports, one click each{!consent && ' (tick the box above first)'}.
+          </p>
+          <div className="sample-grid">
+            {SAMPLE_REPORTS.map((s) => (
+              <button
+                key={s.file}
+                type="button"
+                className="sample-card"
+                disabled={!consent || disabled}
+                onClick={() => loadSample(s)}
+              >
+                <span className="sample-card__label">{s.label}</span>
+                <span className="sample-card__who">{s.who}</span>
+                <span className="sample-card__desc">{s.description}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <p className="upload__divider">
+          <span>or upload your own report</span>
+        </p>
+
         <div
           className={`dropzone ${dragOver ? 'dropzone--active' : ''}`}
           onDragOver={(e) => {
@@ -141,35 +202,6 @@ export default function UploadPanel({ onAnalyze, disabled = false }) {
           </p>
         )}
 
-        <fieldset className="reading-level">
-          <legend>Explanation style</legend>
-          <label>
-            <input
-              type="radio"
-              name="reading-level"
-              value="simple"
-              checked={readingLevel === 'simple'}
-              onChange={() => setReadingLevel('simple')}
-            />
-            Simple
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="reading-level"
-              value="detailed"
-              checked={readingLevel === 'detailed'}
-              onChange={() => setReadingLevel('detailed')}
-            />
-            Detailed
-          </label>
-        </fieldset>
-
-        <label className="consent">
-          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-          <span>I understand MedBridge is for education and does not replace my doctor.</span>
-        </label>
-
         <button
           type="button"
           className="btn btn--primary btn--wide"
@@ -184,26 +216,6 @@ export default function UploadPanel({ onAnalyze, disabled = false }) {
           Your file is processed for this session only and is not stored. Report text is sent to an
           AI service (Groq) to generate explanations.
         </p>
-
-        <div className="samples">
-          <p className="small">
-            <strong>No report handy?</strong> Try a synthetic sample report
-            {!consent && ' (tick the box above first)'}:
-          </p>
-          <div className="button-row">
-            {SAMPLE_REPORTS.map((s) => (
-              <button
-                key={s.file}
-                type="button"
-                className="btn btn--secondary btn--small"
-                disabled={!consent || disabled}
-                onClick={() => loadSample(s)}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-        </div>
       </section>
     </>
   )

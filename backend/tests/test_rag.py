@@ -160,3 +160,31 @@ async def test_fullwidth_markers_are_normalised(fake_llm) -> None:
     res = await answerer.answer(req, [_hit("haemoglobin", "Hb")], started=time.perf_counter())
     assert "[Report]" in res.answer and "[1]" in res.answer
     assert res.used_report_context is True and [s.id for s in res.sources] == [1]
+
+
+# ------------------------------------------------------------------ related knowledge
+
+
+def test_related_knowledge_for_low_haemoglobin(tiny_store) -> None:
+    from app.services.rag.related import attach_related_knowledge
+    from app.services.report_analyzer import normalize_tests
+
+    tests, _ = normalize_tests(
+        [{"name": "Haemoglobin", "value_raw": "10.8", "reference_range_raw": "12.0 - 15.5"}]
+    )
+    attach_related_knowledge(tests, store=tiny_store)
+    related = tests[0].related
+    assert related is not None
+    sections = [p.section for p in related.passages]
+    assert sections == ["What it measures", "What low values can be associated with"]
+    assert related.passages[0].source_url.startswith("https://")
+    assert len(related.doctor_questions) >= 3
+
+
+def test_related_knowledge_skipped_without_index() -> None:
+    from app.services.rag.related import attach_related_knowledge
+    from app.services.report_analyzer import normalize_tests
+
+    tests, _ = normalize_tests([{"name": "Haemoglobin", "value_raw": "10.8"}])
+    attach_related_knowledge(tests, store=IndexStore())  # not loaded
+    assert tests[0].related is None

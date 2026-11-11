@@ -17,6 +17,7 @@ router = APIRouter()
 async def analyze_report_endpoint(
     file: UploadFile = File(...),
     reading_level: Literal["simple", "detailed"] = Form("simple"),
+    language: Literal["en", "hi"] = Form("en"),
 ) -> AnalyzeReportResponse:
     """Upload a text-based lab report PDF and get a plain-language explanation.
 
@@ -27,4 +28,6 @@ async def analyze_report_endpoint(
     data = await read_capped(file, settings.MAX_UPLOAD_MB)
     extracted = validate_and_extract(data, file.filename, file.content_type)
     del data  # the raw upload is no longer needed
-    return await report_analyzer.analyze_report(extracted, reading_level, started=started)
+    return await report_analyzer.analyze_report(
+        extracted, reading_level, language=language, started=started
+    )

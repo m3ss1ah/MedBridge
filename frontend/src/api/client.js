@@ -10,11 +10,18 @@ const BASE = import.meta.env.VITE_API_BASE_URL ?? ''
  * Upload a PDF and get the AnalyzeReportResponse.
  * @param {File} file
  * @param {'simple'|'detailed'} readingLevel
+ * @param {'en'|'hi'} language  language of the AI-written explanation
  */
-export async function analyzeReport(file, readingLevel = 'simple', { signal } = {}) {
+export async function analyzeReport(
+  file,
+  readingLevel = 'simple',
+  language = 'en',
+  { signal } = {},
+) {
   const form = new FormData()
   form.append('file', file)
   form.append('reading_level', readingLevel)
+  form.append('language', language)
   return request('/api/analyze-report', { method: 'POST', body: form, signal })
 }
 
